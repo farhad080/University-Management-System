@@ -58,7 +58,7 @@ class UniversityApiIntegrationTest {
                         .with(httpBasic("admin", "admin123"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.username").value("carol"));
     }
 }
