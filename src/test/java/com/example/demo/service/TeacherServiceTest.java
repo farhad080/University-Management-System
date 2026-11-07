@@ -67,7 +67,6 @@ class TeacherServiceTest {
     void createTeacher_duplicateEmail_throws() {
         when(userRepository.existsByUsername("bob")).thenReturn(false);
         when(userRepository.existsByEmail("bob@university.edu")).thenReturn(true);
-        when(passwordEncoder.encode("teach123")).thenReturn("hashed");
 
         assertThrows(DuplicateResourceException.class, () -> teacherService.createTeacher(request));
         verify(teacherRepository, never()).save(any());
