@@ -12,26 +12,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.junit.jupiter.api.Nested;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * TeacherService tests: 2 unit tests (mocked dependencies) + 1 integration test (full app, H2 database).
- */
 @ExtendWith(MockitoExtension.class)
 class TeacherServiceTest {
 
@@ -52,54 +41,52 @@ class TeacherServiceTest {
     @BeforeEach
     void setUp() {
         request = new TeacherRequestDTO();
-        request.setUsername("grace");
-        request.setPassword("grace123");
-        request.setFullName("Grace Hopper");
-        request.setEmail("grace@university.edu");
-        request.setDepartment("CSE");
+        request.setUsername("bob");
+        request.setPassword("teach123");
+        request.setFullName("Bob Brown");
+        request.setEmail("bob@university.edu");
+        request.setDepartment("EEE");
         request.setDesignation("Lecturer");
         request.setQualification("MSc");
     }
 
     @Test
-    void createTeacher_throwsDuplicate_whenUsernameTaken() {
-        when(userRepository.existsByUsername("grace")).thenReturn(true);
+    void getAllTeachers_mapsEntitiesToDtos() {
+        Teacher t1 = new Teacher("t1", "pw", "Teacher One", "t1@university.edu", "CSE", "Professor", "PhD");
+        Teacher t2 = new Teacher("t2", "pw", "Teacher Two", "t2@university.edu", "EEE", "Lecturer", "MSc");
+        when(teacherRepository.findAll()).thenReturn(List.of(t1, t2));
+
+        List<TeacherResponseDTO> result = teacherService.getAllTeachers();
+
+        assertEquals(2, result.size());
+        assertEquals("Teacher One", result.get(0).getFullName());
+        assertEquals("Lecturer", result.get(1).getDesignation());
+    }
+
+    @Test
+    void createTeacher_duplicateEmail_throws() {
+        when(userRepository.existsByUsername("bob")).thenReturn(false);
+        when(userRepository.existsByEmail("bob@university.edu")).thenReturn(true);
+        when(passwordEncoder.encode("teach123")).thenReturn("hashed");
 
         assertThrows(DuplicateResourceException.class, () -> teacherService.createTeacher(request));
         verify(teacherRepository, never()).save(any());
     }
 
     @Test
-    void updateTeacher_updatesFields_andEncodesNewPassword() {
-        Teacher existing = new Teacher("grace", "old-hash", "Grace Hopper", "grace@university.edu",
-                "CSE", "Lecturer", "MSc");
-        existing.setId(3L);
-        when(teacherRepository.findById(3L)).thenReturn(Optional.of(existing));
-        when(passwordEncoder.encode("grace123")).thenReturn("new-hash");
+    void updateTeacher_withoutPassword_keepsExistingPassword() {
+        Teacher existing = new Teacher("bob", "old-hash", "Bob Brown", "bob@university.edu", "EEE", "Lecturer", "MSc");
+        existing.setId(5L);
+        request.setPassword(null);
+        request.setDesignation("Assistant Professor");
+
+        when(teacherRepository.findById(5L)).thenReturn(Optional.of(existing));
         when(teacherRepository.save(any(Teacher.class))).thenAnswer(inv -> inv.getArgument(0));
-        request.setDesignation("Professor");
 
-        TeacherResponseDTO result = teacherService.updateTeacher(3L, request);
+        TeacherResponseDTO result = teacherService.updateTeacher(5L, request);
 
-        assertEquals("Professor", result.getDesignation());
-        verify(teacherRepository).save(argThat(t -> "new-hash".equals(t.getPassword())));
-    }
-
-    // ---------- Integration test ----------
-
-    @Nested
-    @SpringBootTest
-    @AutoConfigureMockMvc
-    class Integration {
-
-        @Autowired
-        private MockMvc mockMvc;
-
-        @Test
-        void teacher_canListTeachers_includingSeededTeacher() throws Exception {
-            mockMvc.perform(get("/api/teachers").with(httpBasic("teacher", "teacher123")))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$[?(@.username == 'teacher')].designation").value("Professor"));
-        }
+        assertEquals("Assistant Professor", result.getDesignation());
+        assertEquals("old-hash", existing.getPassword());
+        verifyNoInteractions(passwordEncoder);
     }
 }

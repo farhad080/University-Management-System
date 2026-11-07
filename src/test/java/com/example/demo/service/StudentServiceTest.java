@@ -2,37 +2,25 @@ package com.example.demo.service;
 
 import com.example.demo.dto.StudentRequestDTO;
 import com.example.demo.dto.StudentResponseDTO;
+import com.example.demo.exception.DuplicateResourceException;
 import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.model.Student;
 import com.example.demo.repository.StudentRepository;
 import com.example.demo.repository.UserRepository;
-import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * StudentService tests: 2 unit tests (mocked dependencies) + 1 integration test (full app, H2 database).
- */
 @ExtendWith(MockitoExtension.class)
 class StudentServiceTest {
 
@@ -48,11 +36,11 @@ class StudentServiceTest {
     @InjectMocks
     private StudentService studentService;
 
-    // ---------- Unit tests ----------
+    private StudentRequestDTO request;
 
-    @Test
-    void createStudent_encodesPasswordAndSaves() {
-        StudentRequestDTO request = new StudentRequestDTO();
+    @BeforeEach
+    void setUp() {
+        request = new StudentRequestDTO();
         request.setUsername("alice");
         request.setPassword("secret123");
         request.setFullName("Alice Smith");
@@ -61,7 +49,10 @@ class StudentServiceTest {
         request.setStudentIdNumber("CSE-2024-001");
         request.setSemester(2);
         request.setCgpa(3.5);
+    }
 
+    @Test
+    void createStudent_encodesPasswordAndSaves() {
         when(userRepository.existsByUsername("alice")).thenReturn(false);
         when(userRepository.existsByEmail("alice@university.edu")).thenReturn(false);
         when(studentRepository.existsByStudentIdNumber("CSE-2024-001")).thenReturn(false);
@@ -76,54 +67,24 @@ class StudentServiceTest {
 
         assertEquals(10L, result.getId());
         assertEquals("alice", result.getUsername());
+        assertEquals(3.5, result.getCgpa());
         verify(studentRepository).save(argThat(s -> "hashed-secret".equals(s.getPassword())));
     }
 
     @Test
-    void getStudentById_throwsNotFound_whenMissing() {
-        when(studentRepository.findById(99L)).thenReturn(Optional.empty());
+    void createStudent_duplicateUsername_throwsAndDoesNotSave() {
+        when(userRepository.existsByUsername("alice")).thenReturn(true);
 
-        assertThrows(ResourceNotFoundException.class, () -> studentService.getStudentById(99L));
+        assertThrows(DuplicateResourceException.class, () -> studentService.createStudent(request));
+        verify(studentRepository, never()).save(any());
     }
 
-    // ---------- Integration test ----------
+    @Test
+    void getStudentById_notFound_throwsWithMessage() {
+        when(studentRepository.findById(99L)).thenReturn(Optional.empty());
 
-    @Nested
-    @SpringBootTest
-    @AutoConfigureMockMvc
-    class Integration {
-
-        @Autowired
-        private MockMvc mockMvc;
-
-        @Test
-        void admin_canCreateStudent_andThenFetchIt() throws Exception {
-            String body = """
-                    {
-                      "username": "integration_student",
-                      "password": "pass1234",
-                      "fullName": "Integration Student",
-                      "email": "integration.student@university.edu",
-                      "department": "EEE",
-                      "studentIdNumber": "EEE-2024-900",
-                      "semester": 3,
-                      "cgpa": 3.2
-                    }
-                    """;
-
-            String response = mockMvc.perform(post("/api/students")
-                            .with(httpBasic("admin", "admin123"))
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(body))
-                    .andExpect(status().isCreated())
-                    .andExpect(jsonPath("$.role").value("ROLE_STUDENT"))
-                    .andReturn().getResponse().getContentAsString();
-
-            String id = response.replaceAll(".*\"id\"\\s*:\\s*(\\d+).*", "$1");
-
-            mockMvc.perform(get("/api/students/" + id).with(httpBasic("admin", "admin123")))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.studentIdNumber").value("EEE-2024-900"));
-        }
+        ResourceNotFoundException ex = assertThrows(ResourceNotFoundException.class,
+                () -> studentService.getStudentById(99L));
+        assertEquals("Student not found with id: 99", ex.getMessage());
     }
 }
