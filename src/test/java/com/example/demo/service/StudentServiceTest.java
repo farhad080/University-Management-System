@@ -85,6 +85,6 @@ class StudentServiceTest {
 
         ResourceNotFoundException ex = assertThrows(ResourceNotFoundException.class,
                 () -> studentService.getStudentById(99L));
-        assertEquals("Student not found with id: 99", ex.getMessage());
+        assertEquals("Student not found with ID: 99", ex.getMessage());
     }
 }
