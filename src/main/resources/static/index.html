@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>University Management System - CSE 3230</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="navbar">
+    <div class="brand">
+      <div class="brand-icon">🎓</div>
+      <div>
+        <div class="brand-title">University</div>
+        <div class="brand-subtitle">Management System</div>
+      </div>
+    </div>
+    <div class="nav-actions" id="navActions" style="display: none;">
+      <div class="user-badge">
+        <span id="navUsername">User</span>
+        <span class="badge" id="navRoleBadge">ROLE</span>
+      </div>
+      <button class="btn btn-secondary btn-sm" id="btnLogout">Sign Out</button>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- 1. Authentication View -->
+    <section id="authSection" class="auth-wrapper">
+      <div class="auth-header">
+        <h2>Sign In to Portal</h2>
+        <p>Spring Security Role-Based Access Control Demo</p>
+      </div>
+
+      <div class="quick-roles">
+        <div class="quick-roles-title">⚡ Quick Fill Demo Accounts</div>
+        <div class="quick-buttons">
+          <button type="button" class="btn-quick" onclick="app.quickFill('admin', 'admin123')">
+            <span>🛡️</span>
+            <span>Admin</span>
+          </button>
+          <button type="button" class="btn-quick" onclick="app.quickFill('teacher', 'teacher123')">
+            <span>👨‍🏫</span>
+            <span>Teacher</span>
+          </button>
+          <button type="button" class="btn-quick" onclick="app.quickFill('student', 'student123')">
+            <span>🎓</span>
+            <span>Student</span>
+          </button>
+        </div>
+      </div>
+
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="loginUsername">Username</label>
+          <input type="text" id="loginUsername" class="form-control" placeholder="Enter username" required>
+        </div>
+        <div class="form-group">
+          <label for="loginPassword">Password</label>
+          <input type="password" id="loginPassword" class="form-control" placeholder="Enter password" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" id="btnLogin">
+          Sign In to Dashboard
+        </button>
+      </form>
+    </section>
+
+    <!-- 2. Dashboard View -->
+    <section id="dashboardSection" style="display: none;">
+
+      <!-- RBAC Notice Banner -->
+      <div id="roleBanner" class="role-banner">
+        <span id="roleBannerText">Logged in</span>
+        <span style="font-size: 0.8rem; opacity: 0.8;">Role-Based Access Control active</span>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="dashboard-tabs">
+        <button class="tab-btn active" id="tabBtnTeachers" onclick="app.switchTab('teachers')">👨‍🏫 Teachers</button>
+        <button class="tab-btn" id="tabBtnStudents" onclick="app.switchTab('students')">🎓 Students</button>
+        <button class="tab-btn" id="tabBtnAdmins" onclick="app.switchTab('admins')">🛡️ Admins</button>
+        <button class="tab-btn" id="tabBtnTester" onclick="app.switchTab('tester')">⚡ RBAC Live Tester</button>
+      </div>
+
+      <!-- Tab Content: Teachers -->
+      <div id="tabContentTeachers" class="tab-content">
+        <div class="content-card">
+          <div class="card-header-bar">
+            <div>
+              <div class="card-title">Teachers Directory</div>
+              <p style="font-size: 0.85rem; color: var(--text-secondary);">Manage faculty members, designations, and qualifications</p>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="app.openModal('teacherModal')">+ Add Teacher</button>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Username</th>
+                  <th>Full Name</th>
+                  <th>Email</th>
+                  <th>Department</th>
+                  <th>Designation</th>
+                  <th>Qualification</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="teachersTableBody">
+                <tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Content: Students -->
+      <div id="tabContentStudents" class="tab-content" style="display: none;">
+        <div class="content-card">
+          <div class="card-header-bar">
+            <div>
+              <div class="card-title">Students Directory</div>
+              <p style="font-size: 0.85rem; color: var(--text-secondary);">Manage student enrollments, IDs, semesters, and CGPA</p>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="app.openModal('studentModal')">+ Add Student</button>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Student ID</th>
+                  <th>Username</th>
+                  <th>Full Name</th>
+                  <th>Email</th>
+                  <th>Department</th>
+                  <th>Semester</th>
+                  <th>CGPA</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="studentsTableBody">
+                <tr><td colspan="9" style="text-align: center; color: var(--text-muted);">Loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Content: Admins -->
+      <div id="tabContentAdmins" class="tab-content" style="display: none;">
+        <div class="content-card">
+          <div class="card-header-bar">
+            <div>
+              <div class="card-title">Administrators Directory</div>
+              <p style="font-size: 0.85rem; color: var(--text-secondary);">System Administrators with full management permissions</p>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="app.openModal('adminModal')">+ Add Admin</button>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Username</th>
+                  <th>Full Name</th>
+                  <th>Email</th>
+                  <th>Department</th>
+                  <th>Office Location</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="adminsTableBody">
+                <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Content: Live RBAC Tester -->
+      <div id="tabContentTester" class="tab-content" style="display: none;">
+        <div class="content-card">
+          <div class="card-header-bar">
+            <div>
+              <div class="card-title">Live RBAC & REST API Verification</div>
+              <p style="font-size: 0.85rem; color: var(--text-secondary);">
+                Verify that: Admins can access all 3; Teachers can only access Teachers; Students can only access Students.
+              </p>
+            </div>
+          </div>
+
+          <div class="tester-grid">
+            <div class="tester-controls">
+              <div class="test-card">
+                <div>
+                  <strong>GET /api/admins</strong>
+                  <div style="font-size: 0.75rem; color: var(--text-muted);">Requires ROLE_ADMIN</div>
+                </div>
+                <button class="btn btn-secondary btn-sm" onclick="app.testEndpoint('/api/admins')">Execute Request</button>
+              </div>
+
+              <div class="test-card">
+                <div>
+                  <strong>GET /api/teachers</strong>
+                  <div style="font-size: 0.75rem; color: var(--text-muted);">Requires ROLE_ADMIN or ROLE_TEACHER</div>
+                </div>
+                <button class="btn btn-secondary btn-sm" onclick="app.testEndpoint('/api/teachers')">Execute Request</button>
+              </div>
+
+              <div class="test-card">
+                <div>
+                  <strong>GET /api/students</strong>
+                  <div style="font-size: 0.75rem; color: var(--text-muted);">Requires ROLE_ADMIN or ROLE_STUDENT</div>
+                </div>
+                <button class="btn btn-secondary btn-sm" onclick="app.testEndpoint('/api/students')">Execute Request</button>
+              </div>
+            </div>
+
+            <div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <span style="font-size: 0.85rem; color: var(--text-secondary);">Response Viewer:</span>
+                <span id="responseStatusBadge" class="badge">Awaiting Test</span>
+              </div>
+              <div class="tester-output" id="testOutput">Click "Execute Request" above to test any endpoint in real time with your current session.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Teacher Modal (Create/Edit) -->
+  <div class="modal-overlay" id="teacherModal" style="display: none;">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title" id="teacherModalTitle">Add Teacher</h3>
+        <button class="modal-close" onclick="app.closeModal('teacherModal')">&times;</button>
+      </div>
+      <form id="teacherForm" onsubmit="app.saveTeacher(event)">
+        <input type="hidden" id="teacherId">
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="teacherUsername" class="form-control" required>
+        </div>
+        <div class="form-group" id="teacherPasswordGroup">
+          <label>Password</label>
+          <input type="password" id="teacherPassword" class="form-control" placeholder="Leave empty to keep existing password">
+        </div>
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="teacherFullName" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="teacherEmail" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label>Department</label>
+          <input type="text" id="teacherDepartment" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label>Designation</label>
+          <input type="text" id="teacherDesignation" class="form-control" placeholder="Professor, Assistant Professor, etc." required>
+        </div>
+        <div class="form-group">
+          <label>Qualification</label>
+          <input type="text" id="teacherQualification" class="form-control" placeholder="PhD, MSc, etc.">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="app.closeModal('teacherModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Teacher</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Student Modal (Create/Edit) -->
+  <div class="modal-overlay" id="studentModal" style="display: none;">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title" id="studentModalTitle">Add Student</h3>
+        <button class="modal-close" onclick="app.closeModal('studentModal')">&times;</button>
+      </div>
+      <form id="studentForm" onsubmit="app.saveStudent(event)">
+        <input type="hidden" id="studentId">
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="studentUsername" class="form-control" required>
+        </div>
+        <div class="form-group" id="studentPasswordGroup">
+          <label>Password</label>
+          <input type="password" id="studentPassword" class="form-control" placeholder="Leave empty to keep existing password">
+        </div>
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="studentFullName" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="studentEmail" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label>Student ID Number</label>
+          <input type="text" id="studentIdNumber" class="form-control" placeholder="e.g. CSE-2023-010" required>
+        </div>
+        <div class="form-group">
+          <label>Department</label>
+          <input type="text" id="studentDepartment" class="form-control" required>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label>Semester</label>
+            <input type="number" id="studentSemester" class="form-control" min="1" max="12" value="1">
+          </div>
+          <div class="form-group">
+            <label>CGPA</label>
+            <input type="number" step="0.01" id="studentCgpa" class="form-control" min="0" max="4.0" value="3.50">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="app.closeModal('studentModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Student</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Admin Modal (Create/Edit) -->
+  <div class="modal-overlay" id="adminModal" style="display: none;">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title" id="adminModalTitle">Add Administrator</h3>
+        <button class="modal-close" onclick="app.closeModal('adminModal')">&times;</button>
+      </div>
+      <form id="adminForm" onsubmit="app.saveAdmin(event)">
+        <input type="hidden" id="adminId">
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="adminUsername" class="form-control" required>
+        </div>
+        <div class="form-group" id="adminPasswordGroup">
+          <label>Password</label>
+          <input type="password" id="adminPassword" class="form-control" placeholder="Leave empty to keep existing password">
+        </div>
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="adminFullName" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="adminEmail" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label>Department</label>
+          <input type="text" id="adminDepartment" class="form-control">
+        </div>
+        <div class="form-group">
+          <label>Office Location</label>
+          <input type="text" id="adminOfficeLocation" class="form-control">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="app.closeModal('adminModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Admin</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <footer>
+    CSE 3230 Home Task (4th Lab) • University Management System • Built with Spring Boot & Docker
+  </footer>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>
